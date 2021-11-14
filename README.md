@@ -19,5 +19,7 @@ Feel free to message me with your own implementations !
 | Gradient generation |   ✅   | Easy but cool, used to initialize the repo   |
 | Random pattern      |   ✅   | Easy overall, struggled with a lil' segfault |
 | Perlin noise        |   ❌   |                                              |
+| Fractal noise       |   ❌   |                                              |
+| Simplex noise       |   ❌   |                                              |
 
 
