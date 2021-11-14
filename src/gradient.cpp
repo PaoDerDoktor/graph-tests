@@ -1,11 +1,13 @@
+#ifndef STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+#endif
+#ifndef STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
+#endif
 
 #include <string>
-#include <algorithm>
-#include <iostream>
 
 
 uint8_t* generate_greyscale_gradient_bitmap(uint64_t height, uint64_t width) {
@@ -31,8 +33,6 @@ int main(int argc, char const *argv[]) {
     uint64_t width  = 1024;
     int channels = 1;
     std::string filename("out.png");
-
-    std::cout << "cébon lulz" << std::endl;
     
     uint8_t *bitmap = generate_greyscale_gradient_bitmap(height, width);
     stbi_write_png(filename.c_str(), width, height, channels, bitmap, width*channels);
