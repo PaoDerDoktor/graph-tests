@@ -14,6 +14,8 @@ Feel free to message me with your own implementations !
 
 ## Objectives
 
+### 2D objectives
+
 |      Objective      | Status |                                      Comment |
 |:--------------------|:------:|---------------------------------------------:|
 | Gradient generation |   ✅   | Easy but cool, used to initialize the repo   |
