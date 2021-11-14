@@ -14,10 +14,10 @@ Feel free to message me with your own implementations !
 
 ## Objectives
 
-|      Objective      | Status |                                    Comment |
-|:--------------------|:------:|-------------------------------------------:|
-| Gradient generation |   ✅   | Easy but cool, used to initialize the repo |
-| Random pattern      |   ❌   |                                            |
-| Perlin noise        |   ❌   |                                            |
+|      Objective      | Status |                                     Comment |
+|:--------------------|:------:|--------------------------------------------:|
+| Gradient generation |   ✅   | Easy but cool, used to initialize the repo  |
+| Random pattern      |   ✅   | Easy overall, struggled with a lil' segfault|
+| Perlin noise        |   ❌   |                                             |
 
 
