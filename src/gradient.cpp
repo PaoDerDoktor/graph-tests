@@ -5,24 +5,38 @@
 
 #include <string>
 #include <algorithm>
+#include <iostream>
 
-const uint64_t SEED(17082000);
 
-int main(int argc, char const *argv[]) {
-    uint64_t height = 256;
-    uint64_t width  = 256;
-    uint64_t size   = width*height;
-    int channels = 1;
-    std::string filename("out.png");
+uint8_t* generate_greyscale_gradient_bitmap(uint64_t height, uint64_t width) {
+    uint64_t size(height*width);
+
+    uint64_t yWeight = 2*(height/256);
+    uint64_t xWeight = 2*(width /256);
 
     uint8_t* bitmap = new uint8_t[size];
     for (size_t i = 0; i < height; i++) {
         for (size_t j = 0; j < width; j++) {
-            bitmap[j+i*256] = i/2+j/2;
+            bitmap[i*width+j] = (i/yWeight+j/xWeight);
         }
     }
 
+    return bitmap;
+}
+
+
+#ifdef TARGET_GRADIENT
+int main(int argc, char const *argv[]) {
+    uint64_t height = 512;
+    uint64_t width  = 1024;
+    int channels = 1;
+    std::string filename("out.png");
+
+    std::cout << "cébon lulz" << std::endl;
+    
+    uint8_t *bitmap = generate_greyscale_gradient_bitmap(height, width);
     stbi_write_png(filename.c_str(), width, height, channels, bitmap, width*channels);
 
     return 0;
 }
+#endif
