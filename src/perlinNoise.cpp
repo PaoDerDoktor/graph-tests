@@ -10,86 +10,102 @@
 #include <random>
 #include <cmath>
 #include <array>
+#include <iostream>
+#include <vector>
+#include <algorithm>
 
-std::pair<double, double> generate_2d_unit_vector()  {
-    std::uniform_real_distribution doubleGen(-1, 1);
-    std::default_random_engine engine;
+#include "utils/Vect2D.hpp"
 
-    double x = doubleGen(engine);
-    double y = doubleGen(engine);
-
-    double magnitude = std::sqrt(x*x + y*y);
-
-    x /= magnitude;
-    y /= magnitude;
-
-    return std::make_pair(x, y);
-}
-
-std::pair<double, double> compute_2D_vector(std::pair<double, double> pointA, std::pair<double, double> pointB) {
-    return std::make_pair(pointB.first-pointA.first, pointB.second-pointB.second);
-}
-
-double compute_2D_dot_product(std::pair<double, double> v1, std::pair<double, double> v2) {
-    return v1.first*v2.first + v1.second*v1.second;
-}
-
-std::array<std::pair<double, double>, 4> get_2D_corners(std::pair<double, double> pixel, uint64_t cellSize) {
-    double x = std::floor(pixel.first/cellSize);
-    double y = std::floor(pixel.second/cellSize);
-
-    return {
-        std::make_pair(x,   y),
-        std::make_pair(x+1, y),
-        std::make_pair(x,   y+1),
-        std::make_pair(x+1, y+1)
-    };
-}
-
-double interpolate(double dot00, double dot10, double dot01, double dot11, std::pair<double, double> point) {
-    double fracX = point.first  - std::floor((point.first) /4);
-    double fracY = point.second - std::floor((point.second)/4);
-
-    double ab = dot00 + fracX*(dot10 - dot00);
-    double cd = dot01 + fracX*(dot11 - dot01);
-
-    return ab + fracY*(cd-ab);
-}
-
-uint8_t* generate_greyscale_perlin_noise_bitmap(uint64_t height, uint64_t width, uint64_t cellSize) {
-    uint64_t imageSize(height*width);
-
-    uint64_t cellGridHeight(height/cellSize+1);
-    uint64_t cellGridWidth(  width/cellSize+1);
-    uint64_t cellGridSize(cellGridHeight*cellGridWidth);
-
-    // Computing gradient vectors
-
-    std::pair<double, double> *cellGrid = new std::pair<double, double>[cellGridSize];
-    for (size_t i = 0; i <= height; i++) {
-        for (size_t j = 0; j <= width; j++) {
-            cellGrid[i*width+j] = generate_2d_unit_vector();
-        }
+std::vector<Vect2D> generate_2D_unit_vectors(uint64_t amount) {
+    // Preparing random
+    std::uniform_real_distribution<double> randomRange(0.0, 1.0);
+    std::default_random_engine randomEngine;
+    
+    // Computing randoms
+    std::vector<Vect2D> unitVectors;
+    for (uint64_t i=0; i < amount; i++) {
+        // Getting 2 random [0.0, 1.0] doubles
+        double x(randomRange(randomEngine));
+        double y(randomRange(randomEngine));
+        // Building a Vect2D from those doubles
+        Vect2D randomVect(x, y);
+        
+        // Making the Vect2D unit (magnitude of `1`) and adding it to the std::vector
+        randomVect.make_unit();
+        unitVectors.push_back(randomVect);
     }
 
-    // Dot products & interpolate
+    return unitVectors;
+}
 
-    uint8_t *bitmap = new uint8_t[imageSize];
+std::array<Vect2D, 4> get_2D_corners(Vect2D point, uint64_t cellSize) {
+    // Getting top-left corner coordinates
+    Vect2D topLeftPoint(std::floor(point.get_x()/cellSize), std::floor(point.get_y()/cellSize));
 
-    for(size_t i = 0; i < height; i++) {
-        for (size_t j = 0; j < width; j++) {
-            std::array<std::pair<double, double>, 4> corners = get_2D_corners(std::make_pair(i, j), cellSize);
-            double *dots = new double[4];
+    // Computing corners
+    std::array<Vect2D, 4> corners;
+    corners[0] = Vect2D(topLeftPoint);
+    corners[1] = Vect2D(topLeftPoint.get_x()+1, topLeftPoint.get_y());
+    corners[2] = Vect2D(topLeftPoint.get_x()  , topLeftPoint.get_y()+1);
+    corners[3] = Vect2D(topLeftPoint.get_x()+1, topLeftPoint.get_y()+1);
+
+    return corners;
+}
+
+std::array<Vect2D, 4> get_2D_corners_to_point_vectors(const std::array<Vect2D, 4> &corners, const Vect2D &point) {
+    // Getting the coordinates of the point in the subgrid
+    Vect2D subgridPoint(point.get_x(), point.get_y());
+
+    // Getting vectors going from each cell corner to the studied point
+    std::array<Vect2D, 4> cornersToPointVectors;
+    cornersToPointVectors[0] = Vect2D(corners[0], subgridPoint);
+    cornersToPointVectors[1] = Vect2D(corners[1], subgridPoint);
+    cornersToPointVectors[2] = Vect2D(corners[2], subgridPoint);
+    cornersToPointVectors[3] = Vect2D(corners[3], subgridPoint);
+
+    return cornersToPointVectors;
+}
+
+double fade(double t) {
+    return 3*t*t - 2*t*t*t;
+}
+
+std::vector<uint8_t> generate_greyscale_perlin_noise_bitmap(uint64_t height, uint64_t width, uint64_t cellSize) {
+    // Preparing result bitmap
+    std::vector<uint8_t> bitmap;
+    
+    // Generating gradient vectors
+    std::vector<Vect2D> gradientVectors = generate_2D_unit_vectors((height/cellSize+1)*(width/cellSize+1));
+
+    // Computing dot products
+    for (uint64_t j=0; j < height; j++) {
+        for (uint64_t i=0; i < width; i++) {
+            // Getting current point
+            Vect2D point(i, j);
             
-            for (size_t i = 0; i < 4; i++) { // mul cellSize ?
-                std::pair<double, double> corner = corners[i];
-                dots[i] = compute_2D_dot_product(
-                    compute_2D_vector(std::make_pair(i, j), corner),
-                    cellGrid[(int)(corner.first*width*cellSize)+(int)(corner.second*cellSize)]
-                );
-            }
-            // Interpolate
-            bitmap[i*width+j] = 255*interpolate(dots[0], dots[1], dots[2], dots[3], std::make_pair(i, j));
+            // Getting corners
+            std::array<Vect2D, 4> corners = get_2D_corners(point, cellSize);
+
+            // Getting vectors to point
+            std::array<Vect2D, 4> vectorsToPoint = get_2D_corners_to_point_vectors(corners, point);
+
+            // Getting dot products
+            double s = gradientVectors[corners[0].get_y()*(width/cellSize+1)+corners[0].get_x()].dot(vectorsToPoint[0]);
+            double t = gradientVectors[corners[1].get_y()*(width/cellSize+1)+corners[1].get_x()].dot(vectorsToPoint[1]);
+            double u = gradientVectors[corners[2].get_y()*(width/cellSize+1)+corners[2].get_x()].dot(vectorsToPoint[2]);
+            double v = gradientVectors[corners[3].get_y()*(width/cellSize+1)+corners[3].get_x()].dot(vectorsToPoint[3]);
+
+            // Getting dimensional weights
+            double Sx = fade(i/cellSize - corners[0].get_x());
+            double Sy = fade(j/cellSize - corners[0].get_y());
+
+            // Getting interpolations
+            double a = s + Sx*(t-s);
+            double b = u + Sx*(v-u);
+
+            double z = a + Sy*(b-a);
+
+            bitmap.push_back(z);
         }
     }
 
@@ -98,14 +114,15 @@ uint8_t* generate_greyscale_perlin_noise_bitmap(uint64_t height, uint64_t width,
 
 #ifdef TARGET_PERLINNOISE
 int main(int argc, char const *argv[]) {
-    uint64_t height = 512;
-    uint64_t width  = 1024;
+    uint64_t height = 2048;
+    uint64_t width  = 2048;
     int channels = 1;
     
     // Truly pseudorandom one
-    std::string filename("randomPattern - timed random.png");
-    uint8_t *bitmap = generate_greyscale_perlin_noise_bitmap(height, width, 4);
-    stbi_write_png(filename.c_str(), width, height, channels, bitmap, width*channels);
+    std::string filename("perlinNoise.png");
+    std::vector<uint8_t> bitmap = generate_greyscale_perlin_noise_bitmap(height, width, 4);
+    stbi_write_png(filename.c_str(), width, height, channels, &bitmap[0], width*channels);
+
 
     return 0;
 }
