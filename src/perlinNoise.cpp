@@ -81,7 +81,7 @@ std::vector<uint8_t> generate_greyscale_perlin_noise_bitmap(uint64_t height, uin
     for (uint64_t j=0; j < height; j++) {
         for (uint64_t i=0; i < width; i++) {
             // Getting current point
-            Vect2D point(i, j);
+            Vect2D point(i+0.5, j+0.5);
             
             // Getting corners
             std::array<Vect2D, 4> corners = get_2D_corners(point, cellSize);
@@ -96,8 +96,8 @@ std::vector<uint8_t> generate_greyscale_perlin_noise_bitmap(uint64_t height, uin
             double v = gradientVectors[corners[3].get_y()*(width/cellSize+1)+corners[3].get_x()].dot(vectorsToPoint[3]);
 
             // Getting dimensional weights
-            double Sx = fade(i/cellSize - corners[0].get_x());
-            double Sy = fade(j/cellSize - corners[0].get_y());
+            double Sx = fade(point.get_x()/cellSize - corners[0].get_x());
+            double Sy = fade(point.get_y()/cellSize - corners[0].get_y());
 
             // Getting interpolations
             double a = s + Sx*(t-s);
@@ -114,13 +114,13 @@ std::vector<uint8_t> generate_greyscale_perlin_noise_bitmap(uint64_t height, uin
 
 #ifdef TARGET_PERLINNOISE
 int main(int argc, char const *argv[]) {
-    uint64_t height = 2048;
-    uint64_t width  = 2048;
+    uint64_t height = 2048*4;
+    uint64_t width  = 2048*4;
     int channels = 1;
     
     // Truly pseudorandom one
     std::string filename("perlinNoise.png");
-    std::vector<uint8_t> bitmap = generate_greyscale_perlin_noise_bitmap(height, width, 4);
+    std::vector<uint8_t> bitmap = generate_greyscale_perlin_noise_bitmap(height, width, 512);
     stbi_write_png(filename.c_str(), width, height, channels, &bitmap[0], width*channels);
 
 
